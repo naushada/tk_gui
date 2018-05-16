@@ -1,3 +1,16 @@
+#/* 
+# @Name: menu_main.tk
+# @Description: This file is to build the menu bar with anylevel of
+#              submenu. The convention for menu creation is as follows
+# 1) "." - represents the top level of menu 
+# 2) "+" - represents that this is a parent for submenu
+# 3) neither "." nor "+" represents the command for menu item
+# 4) command arguments for menu item
+#
+# @Author: Mohad Naushad Ahmed
+# @Email:  NAUSHAD.DLN@GMAIL.COM
+# @Dated:  15-May-2018
+#*/
 
 set menu_b {
   #/*Root     Menu Name      Parent/Leaf(proc) Argument for Leafnode*/
