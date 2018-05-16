@@ -1,0 +1,163 @@
+
+set menu_b {
+  #/*Root     Menu Name      Parent/Leaf(proc) Argument for Leafnode*/
+  #/*----------------------------------------------------------------*/
+  {"."          "Test"                  "test_proc1"   {}}
+  {"."          "Uidai"                 "+"            {}}
+  {"Uidai"      "Staging"               "+"            {}}
+  {"Staging"    "Authentication"        "+"            {}}
+  {"Authentication"    "Version1.6"    "dot6"        {}}
+  {"Authentication"    "Version2.0"    "dot0"        {}}
+  {"Staging"           "Otp"            "+"            {}}
+  {"Otp"               "Version1.6"    "proc_otp16"   {}}
+  {"Otp"               "Version2.5"    "proc_otp25"   {}}
+  {"Staging"           "eKyc"           "+"            {}}
+  {"eKyc"              "Version1.6"     "proc_ekyc16"  {}}
+  {"eKyc"              "Version2.5"     "proc_ekyc25"  {}}
+  {"Uidai"             "Pre-Production" "+"            {}}
+  {"Pre-Production"    "Authentication" "+"            {}}
+  {"Authentication"    "Version1.6"    "dot6"        {}}
+  {"Authentication"    "Version2.0"    "dot0"        {}}
+  {"Pre-Production"    "Otp"            "+"            {}}
+  {"Otp"               "Version1.6"    "proc_otp16"   {}}
+  {"Otp"               "Version2.5"    "proc_otp25"   {}}
+  {"Pre-Production"    "eKyc"           "+"            {}}
+  {"eKyc"              "Version1.6"    "proc_ekyc16"  {}}
+  {"eKyc"              "Version2.5"    "proc_ekyc25"  {}}
+  {"Uidai"             "Production" "+"            {}}
+  {"Production"    "Authentication" "+"            {}}
+  {"Authentication"    "Version1.6"    "dot6"        {}}
+  {"Authentication"    "Version2.0"    "dot0"        {}}
+  {"Production"    "Otp"            "+"            {}}
+  {"Otp"               "Version1.6"    "proc_otp16"   {}}
+  {"Otp"               "Version2.5"    "proc_otp25"   {}}
+  {"Production"    "eKyc"           "+"            {}}
+  {"eKyc"              "Version1.6"    "proc_ekyc16"  {}}
+  {"eKyc"              "Version2.5"    "proc_ekyc25"  {}}
+
+};#/*Menu bar*/
+
+puts $menu_b
+menu .m
+
+.m add cascade -menu [menu .m.file -tearoff 0] -label File
+.m.file add cascade -menu [menu .m.file.f1 -tearoff 0] -label File
+.m.file.f1 add command -command searchcmd -label F1
+.m add command -command searchcmd -label Search
+.m add command -command helpcmd   -label Help
+
+.m.file add command -command {filecmd new}  -label New
+.m.file add command -command {filecmd open} -label Open
+.m.file add command -command {filecmd save} -label Save
+
+. configure -menu .m
+
+
+proc filecmd op {status "File operation {$op} selected"}
+proc searchcmd {} {status "Search selected"}
+proc helpcmd {} {status "Help selected"}
+
+proc get_parent_path path {
+
+  set len [llength $path]
+  set tmp_path {}
+
+  for {set idx 1} {$idx < $len} {incr idx} {
+    set tmp_var [string tolower [lindex $path [expr {$len - $idx}]]]
+    set tmp_path [concat $tmp_path.$tmp_var]
+  }
+
+  return $tmp_path
+};#/*get_parent_path*/
+
+proc build_widget_path path {
+
+  set len [llength $path]
+  set tmp_path {}
+
+  for {set idx 0} {$idx < $len} {incr idx} {
+    set tmp_var [string tolower [lindex $path [expr {$len - $idx - 1}]]]
+    set tmp_path [concat $tmp_path.$tmp_var]
+  }
+
+  return $tmp_path
+};#/*build_widget_path*/
+
+proc get_offset {root parent} {
+
+ set idx 0
+  foreach  p_elem $parent {
+    if {$root != [lindex $parent $idx]} {
+      set idx [expr $idx + 1]
+    } else {
+      break
+    }
+  }
+
+  return $idx
+};#/*get_offset*/
+
+proc del_elem {offset parent} {
+
+  for {set idx 0} {$idx < $offset} {incr idx} {
+    set parent [lreplace $parent 0 0]
+  }
+
+  return $parent
+};#/*del_elem*/
+
+proc build_menu {menu_b menu_bar} {
+
+  set parent [list] 
+
+  foreach elem $menu_b {
+    set root [lindex $elem 0]
+    set lbl [lindex $elem 1]
+    set cmd [lindex $elem 2]
+    set arg [lindex $elem 3]
+
+    if {$cmd == "+"} {
+      #submenu 
+      if {"." == $root} {
+        #Delete the parent list
+        set parent [list]
+        set sep 1
+      } else {
+        set sep 0
+      }
+      #/*pop up the parent*/ 
+      if {$root != [lindex $parent 0]} {
+        set offset [get_offset $root $parent]
+        set parent [del_elem $offset $parent]
+      }
+      #/*push into parent*/
+      set parent [linsert $parent 0 $lbl]
+      set path [build_widget_path $parent]
+
+      if {[llength $parent] > 1} {
+        set parent_path [get_parent_path $parent]
+        eval $menu_bar$parent_path add cascade -menu [menu $menu_bar$path -tearoff $sep] -label $lbl
+      } else {
+        eval $menu_bar add cascade -menu [menu $menu_bar$path -tearoff $sep] -label $lbl
+      }
+    } elseif {$root == "."} {
+      #root element of menubar
+      eval $menu_bar add command -command $cmd $arg -label $lbl
+
+    } elseif {[lindex $parent 0] == $root} {
+      #sub-menu
+      set path [build_widget_path $parent]
+      eval $menu_bar$path add command -command $cmd $arg -label $lbl
+
+    } elseif {[llength $parent] > 0} {
+      #/*pop up the parent*/ 
+      set offset [get_offset $root $parent] 
+      set parent [del_elem $offset $parent]
+      set path [build_widget_path $parent]
+      eval $menu_bar$path add command -command $cmd $arg -label $lbl
+    }
+  }
+};#/*build_menu_*/
+
+
+build_menu $menu_b .m
